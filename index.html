@@ -445,9 +445,15 @@ const store=(function(){
     let db=null,loaded=0;
     const boot=()=>{
       firebase.initializeApp(cfg);db=firebase.database();
+      let denied=false;
+      const onDenied=err=>{
+        if(denied||!err||String(err).indexOf('permission_denied')===-1)return;
+        denied=true;setConn('off');
+        toast('La base rechaza el acceso: faltan publicar las reglas de "mesa"');
+      };
       Object.keys(COLS).forEach(col=>{
         const ref=col==='feed'?db.ref('mesa/feed').limitToLast(120):db.ref('mesa/'+col);
-        ref.on('child_added',s=>emit(col,'set',s.key,s.val()));
+        ref.on('child_added',s=>emit(col,'set',s.key,s.val()),onDenied);
         ref.on('child_changed',s=>emit(col,'set',s.key,s.val()));
         ref.on('child_removed',s=>emit(col,'del',s.key,null));
       });
