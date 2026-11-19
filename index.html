@@ -657,11 +657,20 @@ async function desactivarAvisos(){
   }catch(e){toast('No se pudieron desactivar')}
   pintarAvisos();
 }
+/* Si este dispositivo ya dio permiso y sigue suscripto, se anota en el tablero que esté usando */
 async function refrescarAviso(){
   try{
-    if(!AV_PUB||!localStorage.getItem('mt-push')||!('Notification' in window)||Notification.permission!=='granted')return;
-    const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
-    if(sub)await anotarSuscripcion(sub);else localStorage.removeItem('mt-push');
+    if(AV_PUB&&'Notification' in window&&'serviceWorker' in navigator&&Notification.permission==='granted'){
+      const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
+      if(sub)await anotarSuscripcion(sub);else localStorage.removeItem('mt-push');
+    }
+  }catch(e){}
+  /* estado de los avisos de este dispositivo, para poder revisarlo si no llegan */
+  try{
+    let d=localStorage.getItem('mt-disp');if(!d){d=uid();localStorage.setItem('mt-disp',d)}
+    await nube.guardar('estado/'+d,{d:queDisp(),avisos:await estadoAvisos().catch(()=>'error'),
+      permiso:'Notification' in window?Notification.permission:'sin soporte',instalada:instalada(),
+      push:'PushManager' in window,sw:'serviceWorker' in navigator,t:Date.now()});
   }catch(e){}
 }
 async function pintarAvisos(){
