@@ -296,7 +296,7 @@ const nube=(function(){
     localStorage.setItem('mt-borrados',JSON.stringify(Array.from(borrados)))}catch(e){}};
   const nueva=()=>{const A='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789',b=new Uint8Array(40);
     crypto.getRandomValues(b);return Array.from(b,x=>A[x%A.length]).join('')};
-  let clave=localStorage.getItem('mt-clave')||'',ref=null,estado='local',alCambiar=()=>{},alEstado=()=>{};
+  let clave=localStorage.getItem('mt-clave')||'',ref=null,base=null,estado='local',alCambiar=()=>{},alEstado=()=>{};
 
   const enLink=location.hash.match(/clave=([A-Za-z0-9]{32,})/);
   if(enLink&&enLink[1]!==clave){
@@ -334,14 +334,15 @@ const nube=(function(){
     const listo=()=>{
       firebase.initializeApp(cfg);
       const db=firebase.database();
-      ref=db.ref(raiz+'/'+clave+'/items');
-      const negado=err=>{if(err&&/permission_denied/i.test(String(err.code||err))){ref=null;pone('negado')}};
+      base=db.ref(raiz+'/'+clave);ref=base.child('items');
+      const negado=err=>{if(err&&/permission_denied/i.test(String(err.code||err))){ref=null;base=null;pone('negado')}};
       ref.on('child_added',s=>entra(s.key,s.val()),negado);
       ref.on('child_changed',s=>entra(s.key,s.val()));
       ref.on('child_removed',s=>sale(s.key));
       ref.once('value',s=>{
         if(!ref)return;
         cargado=true;if(enLinea)pone('ok');
+        try{base.child('prefs/tz').set(Intl.DateTimeFormat().resolvedOptions().timeZone||'America/Argentina/Buenos_Aires')}catch(e){}
         const rem=s.val()||{};
         borrados.forEach(id=>quitar(id));
         Object.keys(items).forEach(id=>{
@@ -361,10 +362,19 @@ const nube=(function(){
     get estado(){return estado},get clave(){return clave},hay:!!cfg,
     link:()=>clave?location.origin+location.pathname+'#clave='+clave:'',
     subir,quitar,
+    guardar:(ruta,v)=>base?base.child(ruta).set(v):Promise.reject(new Error('sin nube')),
+    quitarRuta:ruta=>base?base.child(ruta).remove():Promise.resolve(),
+    adoptar(texto){
+      const t=String(texto||'').trim(),m=t.match(/clave=([A-Za-z0-9]{32,})/)||t.match(/^([A-Za-z0-9]{32,})$/);
+      if(!m)return false;
+      if(m[1]!==clave){Object.keys(items).forEach(id=>sucios.add(id));anotar();
+        localStorage.setItem('mt-clave',m[1]);localStorage.removeItem('mt-push');location.hash='clave='+m[1];location.reload()}
+      return true;
+    },
     iniciar(fnCambio,fnEstado){alCambiar=fnCambio;alEstado=fnEstado;if(cfg&&clave){pone('off');conectar()}},
     cambiarLink(){
       const fin=()=>{Object.keys(items).forEach(id=>sucios.add(id));anotar();
-        localStorage.setItem('mt-clave',nueva());location.hash='';location.reload()};
+        localStorage.setItem('mt-clave',nueva());localStorage.removeItem('mt-push');location.hash='';location.reload()};
       if(ref)ref.parent.remove().then(fin,fin);else fin();
     }
   };
@@ -600,8 +610,76 @@ let instalar=null;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();instalar=e});
 const esIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const instalada=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
-/* En iPhone la app instalada arranca desde la dirección exacta que estaba abierta (con la clave) */
-if(esIOS){const m=$('#manif');if(m)m.remove()}
+/* En iPhone la app instalada tiene que arrancar desde la dirección abierta, que lleva la clave */
+if(esIOS){const m=$('#manif');if(m)m.href='manifest-ios.webmanifest'}
+
+/* ---------- avisos al teléfono ---------- */
+const AV_PUB=(typeof AVISOS_CLAVE_PUBLICA!=='undefined'&&AVISOS_CLAVE_PUBLICA)||'';
+const aBytes=s=>{const p=s.replace(/-/g,'+').replace(/_/g,'/'),r=atob(p+'==='.slice((p.length+3)%4));return Uint8Array.from(r,c=>c.charCodeAt(0))};
+const idDe=async e=>{const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(e));return Array.from(new Uint8Array(h).slice(0,12),b=>b.toString(16).padStart(2,'0')).join('')};
+const queDisp=()=>esIOS?'iPhone':/Android/.test(navigator.userAgent)?'Android':'Compu';
+async function estadoAvisos(){
+  if(!AV_PUB)return'no';
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))return esIOS&&!instalada()?'instalar':'no';
+  if(Notification.permission==='denied')return'bloqueado';
+  if(nube.estado!=='ok')return'sin-nube';
+  const reg=await navigator.serviceWorker.getRegistration(),sub=reg&&await reg.pushManager.getSubscription();
+  return sub&&Notification.permission==='granted'&&localStorage.getItem('mt-push')?'activo':'listo';
+}
+async function anotarSuscripcion(sub){
+  const j=sub.toJSON(),id=await idDe(j.endpoint);
+  await nube.guardar('push/'+id,{endpoint:j.endpoint,keys:j.keys,t:Date.now(),d:queDisp()});
+  localStorage.setItem('mt-push',id);
+}
+async function activarAvisos(){
+  try{
+    const b=$('#avSi');if(b){b.disabled=true;b.textContent='Activando…'}
+    if(await Notification.requestPermission()!=='granted'){toast('Sin tu permiso no puedo mandarte avisos');return pintarAvisos()}
+    const tope=new Promise((_,no)=>setTimeout(()=>no(new Error('tardó demasiado')),20000));
+    await Promise.race([tope,(async()=>{
+      const reg=await navigator.serviceWorker.ready;
+      const sub=await reg.pushManager.getSubscription()||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:aBytes(AV_PUB)});
+      await anotarSuscripcion(sub);
+    })()]);
+    const reg=await navigator.serviceWorker.ready;
+    reg.showNotification('Avisos activados',{body:'Te aviso antes de cada parcial y reunión, y a la mañana con lo del día.',icon:'icons/app-192.png',tag:'activados'}).catch(()=>{});
+    toast('Avisos activados');
+  }catch(e){toast('No se pudieron activar los avisos. Probá de nuevo en un rato.')}
+  pintarAvisos();
+}
+async function desactivarAvisos(){
+  try{
+    const reg=await navigator.serviceWorker.getRegistration(),sub=reg&&await reg.pushManager.getSubscription();
+    const id=localStorage.getItem('mt-push');localStorage.removeItem('mt-push');
+    if(sub)await sub.unsubscribe();
+    if(id)await nube.quitarRuta('push/'+id);
+    toast('Avisos desactivados en este dispositivo');
+  }catch(e){toast('No se pudieron desactivar')}
+  pintarAvisos();
+}
+async function refrescarAviso(){
+  try{
+    if(!AV_PUB||!localStorage.getItem('mt-push')||!('Notification' in window)||Notification.permission!=='granted')return;
+    const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
+    if(sub)await anotarSuscripcion(sub);else localStorage.removeItem('mt-push');
+  }catch(e){}
+}
+async function pintarAvisos(){
+  if(!$('#aAv'))return;
+  let e;try{e=await estadoAvisos()}catch(x){e='no'}
+  const c=$('#aAv');if(!c)return;
+  const QUE='Un resumen a la mañana con lo del día, la noche anterior y dos horas antes de cada parcial, y una hora antes de cada reunión.';
+  c.innerHTML={
+    activo:'<p>Activados en este dispositivo. '+QUE+'</p><div class="fb"><button class="btn" id="avNo">Desactivar</button></div>',
+    listo:'<p>'+QUE+'</p><div class="fb"><button class="btn pri" id="avSi" style="margin:0 0 6px">Activar avisos</button></div>',
+    instalar:'<p>En iPhone los avisos funcionan con la app instalada: tocá Compartir, “Agregar a inicio”, abrila desde el ícono y activalos ahí.</p>',
+    bloqueado:'<p>Los avisos están bloqueados para esta app. Se habilitan desde los ajustes del teléfono o del navegador.</p>',
+    'sin-nube':'<p>Los avisos necesitan la sincronización, que ahora no está conectada. Probá de nuevo cuando haya conexión.</p>',
+    no:'<p>Este navegador no permite avisos.</p>'}[e];
+  const si=$('#avSi'),no=$('#avNo');
+  if(si)si.onclick=activarAvisos;
+  if(no)no.onclick=desactivarAvisos;
+}
 
 function abrirAjustes(){
   const e=nube.estado,n=lista().length;
@@ -614,9 +692,10 @@ function abrirAjustes(){
       :instalar?'<p>Se instala como una app más, con su ícono, y abre sin la barra del navegador.</p><div class="fb"><button class="btn pri" id="aInst" style="margin:0 0 6px">Instalar la app</button></div>'
       :esIOS?'<p>En Safari tocá Compartir y después “Agregar a inicio”. Queda como una app más, con tu tablero adentro.</p>'
       :'<p>En Chrome abrí el menú de los tres puntos y elegí “Instalar app” o “Agregar a la pantalla principal”.</p>')
+    +'<h2>Avisos</h2><div id="aAv"><p>Viendo si se pueden activar…</p></div>'
     +'<h2>Tus dispositivos</h2><p>'+est+'</p>'
     +(nube.hay?'<p>Este es tu link personal. Abrilo en otro dispositivo y vas a ver lo mismo. Quien lo tenga entra a tu tablero: no lo compartas.</p>'
-      +'<div class="link">'+esc(nube.link())+'</div><div class="fb"><button class="btn" id="aCop">Copiar link</button><button class="btn" id="aRot">Cambiar el link</button></div>':'')
+      +'<div class="link">'+esc(nube.link())+'</div><div class="fb"><button class="btn" id="aCop">Copiar link</button><button class="btn" id="aOtro">Usar otro link</button><button class="btn" id="aRot">Cambiar el link</button></div>':'')
     +'<h2>Copia de seguridad</h2><p>Tenés '+n+(n===1?' cosa anotada.':' cosas anotadas.')+'</p>'
     +'<div class="fb"><button class="btn" id="aExp">Descargar copia</button><button class="btn" id="aImp">Restaurar copia</button></div>'
     +'<input type="file" id="aFile" accept="application/json,.json" hidden>'
@@ -626,7 +705,10 @@ function abrirAjustes(){
   const c=$('#aCop');
   if(c)c.onclick=()=>{const l=nube.link();(navigator.clipboard?navigator.clipboard.writeText(l):Promise.reject()).then(()=>toast('Link copiado'),()=>prompt('Copiá tu link:',l))};
   const r=$('#aRot');
-  if(r)r.onclick=()=>{if(confirm('Se crea un link nuevo y el anterior deja de funcionar en todos los dispositivos. Después vas a tener que abrir el link nuevo en cada uno. ¿Cambiarlo?'))nube.cambiarLink()};
+  if(r)r.onclick=()=>{if(confirm('Se crea un link nuevo y el anterior deja de funcionar en todos los dispositivos. Después vas a tener que abrir el link nuevo en cada uno, y los avisos dejan de llegar hasta configurarlos de nuevo. ¿Cambiarlo?'))nube.cambiarLink()};
+  const o=$('#aOtro');
+  if(o)o.onclick=()=>{const v=prompt('Pegá acá el link personal de tu otro dispositivo. Lo que tengas anotado en este se suma.');if(v&&!nube.adoptar(v))toast('Ese link no tiene una clave válida')};
+  pintarAvisos();
   $('#aExp').onclick=()=>{const b=new Blob([JSON.stringify({exportado:new Date().toISOString(),items},null,1)],{type:'application/json'});
     const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='mi-tablero-'+hoy()+'.json';a.click();toast('Copia descargada')};
   $('#aImp').onclick=()=>$('#aFile').click();
@@ -651,6 +733,8 @@ function toast(msg,accion,fn){
 function ponerEstado(e){
   const c=$('#conn');c.className='conn '+e;
   $('#bAj').title={ok:'Sincronizado',off:'Sin conexión',negado:'Guardado en este dispositivo',local:'Guardado en este dispositivo'}[e]||'';
+  if(e==='ok')refrescarAviso();
+  pintarAvisos();
 }
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-tildar],[data-abrir],[data-dia],[data-todo],[data-nuevo]');

@@ -1,0 +1,50 @@
+name: Avisos
+
+# Manda los avisos de Mi tablero. GitHub lo corre cada 10 minutos, a veces
+# con algunos minutos de demora. También se puede lanzar a mano con una
+# prueba desde la pestaña Actions.
+
+on:
+  schedule:
+    - cron: '3-59/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      prueba:
+        description: 'Mandar un aviso de prueba a todos los dispositivos'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: avisos
+  cancel-in-progress: false
+
+jobs:
+  avisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Instalar
+        working-directory: avisos
+        run: npm ci --omit=dev --no-audit --no-fund
+      - name: Mandar avisos
+        working-directory: avisos
+        env:
+          TABLERO_CLAVE: ${{ secrets.TABLERO_CLAVE }}
+          VAPID_PUBLICA: ${{ vars.VAPID_PUBLICA }}
+          VAPID_PRIVADA: ${{ secrets.VAPID_PRIVADA }}
+          PRUEBA: ${{ github.event_name == 'workflow_dispatch' && inputs.prueba && '1' || '0' }}
+        run: node enviar.mjs
+      # GitHub apaga los horarios de un repo sin movimiento por 60 días: esto lo mantiene encendido
+      - name: Mantener encendido
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/avisos.yml/enable" || true

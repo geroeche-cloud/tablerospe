@@ -1,0 +1,9 @@
+{
+  "name": "avisos-mi-tablero",
+  "private": true,
+  "type": "module",
+  "description": "Manda los avisos de Mi tablero. Lo corre GitHub Actions cada 10 minutos.",
+  "dependencies": {
+    "web-push": "3.6.7"
+  }
+}

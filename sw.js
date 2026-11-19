@@ -1,7 +1,7 @@
 /* Mi tablero: abre sin conexión. La red va primero para que siempre
    llegue la última versión; si no hay red, se usa lo guardado. */
-const V = 'mi-tablero-v2';
-const BASE = ['./', 'index.html', 'js/red-config.js', 'manifest.webmanifest',
+const V = 'mi-tablero-v3';
+const BASE = ['./', 'index.html', 'js/red-config.js', 'manifest.webmanifest', 'manifest-ios.webmanifest',
   'icons/app-192.png', 'icons/app-512.png', 'icons/app-180.png', 'icons/app.svg'];
 
 self.addEventListener('install', e => {
@@ -37,4 +37,20 @@ self.addEventListener('fetch', e => {
   } else if (/(^|\.)fonts\.(googleapis|gstatic)\.com$/.test(u.hostname) || u.hostname === 'www.gstatic.com') {
     e.respondWith(caches.match(req).then(m => m || fetch(req).then(res => guardar(req, res))));
   }
+});
+
+/* ---------- avisos ---------- */
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (x) { d = { b: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.t || 'Mi tablero', {
+    body: d.b || '', icon: 'icons/app-192.png', badge: 'icons/app-192.png', tag: d.tag || undefined, data: { url: d.url || './' }
+  }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+    for (const c of cs) if ('focus' in c) return c.focus();
+    return self.clients.openWindow('./');
+  }));
 });
