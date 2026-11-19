@@ -368,7 +368,7 @@ const nube=(function(){
       const t=String(texto||'').trim(),m=t.match(/clave=([A-Za-z0-9]{32,})/)||t.match(/^([A-Za-z0-9]{32,})$/);
       if(!m)return false;
       if(m[1]!==clave){Object.keys(items).forEach(id=>sucios.add(id));anotar();
-        localStorage.setItem('mt-clave',m[1]);localStorage.removeItem('mt-push');location.hash='clave='+m[1];location.reload()}
+        localStorage.setItem('mt-clave',m[1]);location.hash='clave='+m[1];location.reload()}
       return true;
     },
     iniciar(fnCambio,fnEstado){alCambiar=fnCambio;alEstado=fnEstado;if(cfg&&clave){pone('off');conectar()}},
