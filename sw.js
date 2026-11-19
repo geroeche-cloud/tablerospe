@@ -1,8 +1,8 @@
 /* Mi tablero: abre sin conexión. La red va primero para que siempre
    llegue la última versión; si no hay red, se usa lo guardado. */
-const V = 'mi-tablero-v1';
+const V = 'mi-tablero-v2';
 const BASE = ['./', 'index.html', 'js/red-config.js', 'manifest.webmanifest',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
+  'icons/app-192.png', 'icons/app-512.png', 'icons/app-180.png', 'icons/app.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(BASE)).then(() => self.skipWaiting()));
