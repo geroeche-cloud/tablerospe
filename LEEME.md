@@ -1,19 +1,43 @@
-# SPE · Organización
+# Mi tablero
 
-Mesa de trabajo del SPE Student Chapter: qué hay que hacer, quién lo hace,
-qué falta y qué está bloqueado. Sin cuentas ni contraseñas.
+Calendario personal para parciales, reuniones y pendientes. Es una
+aplicación web que se instala en el teléfono. Nació del tablero del SPE
+Student Chapter (la versión del grupo quedó en `main`, commit `9adbcaa`).
 
-- **`index.html`** — toda la aplicación (tablero + mapa). Un solo archivo, sin dependencias.
-- **`js/red-config.js`** — configuración de Firebase. Con ella, todo el grupo ve y
-  edita lo mismo en tiempo real; sin ella, cada dispositivo funciona en modo local.
-  Los pasos para activarla están escritos dentro del archivo (5 minutos, una sola vez).
+## Qué hace
 
-## Datos
+- **Calendario del mes** arriba: un punto por cada cosa, los días de parcial
+  en rojo y un signo de exclamación donde se juntan dos cosas.
+- **Lo próximo**, con la cuenta regresiva en vivo.
+- **Lo que viene**, en una sola lista: cuánto falta para cada cosa, lo
+  atrasado primero y lo que no tiene fecha al final.
+- **Choques**: avisa cuando dos cosas se pisan de horario, cuando hay dos
+  parciales el mismo día y cuando dos parciales quedan en días seguidos.
+  Avisa también antes de guardar.
+- **Anotar** con el botón +: se escribe en una línea y completa solo el
+  tipo, el día y la hora. `Parcial de Física 2 el viernes 18hs`,
+  `Reunión SPE mañana a las 19`, `Entregar TP de Química el lunes`.
+- Tocar un día muestra solo ese día. Deslizar el calendario cambia de mes.
 
-- Los datos viven en Firebase Realtime Database (gratis), no en este repositorio.
-- Cada dispositivo guarda además una copia de seguridad local automática.
-- Desde **Buscar → ⬇ Copia de seguridad** se descarga todo en un archivo `.json`.
+## Archivos
 
-## Publicar
+- `index.html`: toda la aplicación.
+- `js/red-config.js`: conexión a Firebase y las reglas que hay que publicar.
+- `manifest.webmanifest`, `sw.js`, `icons/`: lo que la hace instalable y
+  que abra sin conexión.
 
-Sitio estático puro: funciona en GitHub Pages, Vercel, Netlify o cualquier hosting.
+## Instalarla en el teléfono
+
+Abrir el link personal en el navegador del teléfono. En Android (Chrome):
+menú de los tres puntos → "Instalar app". En iPhone (Safari): Compartir →
+"Agregar a inicio". Necesita estar publicada con https.
+
+## Privacidad y datos
+
+- No hay cuentas ni contraseñas. Se abre con un **link personal** que termina
+  en `#clave=...`; sin esa clave no se puede leer ni escribir nada. Está en
+  Ajustes, con un botón para copiarlo y otro para cambiarlo.
+- Los datos se guardan siempre en el dispositivo y, con las reglas de
+  Firebase publicadas, también en la nube para ver lo mismo en el celular y
+  la compu. Sin las reglas, cada dispositivo guarda lo suyo.
+- Ajustes → Copia de seguridad descarga todo en un `.json` y lo restaura.
