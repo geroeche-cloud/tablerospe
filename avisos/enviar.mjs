@@ -4,7 +4,10 @@
    OJO: los registros de Actions de un repo público los puede ver cualquiera.
    Acá no se imprime nunca la clave, ni títulos, ni direcciones: solo números. */
 import webpush from 'web-push';
+import { readFileSync } from 'node:fs';
 import { calcular } from './logica.mjs';
+
+const FRASES = JSON.parse(readFileSync(new URL('../js/frases.json', import.meta.url), 'utf8'));
 
 const BASE = process.env.TABLERO_BASE || 'https://spe-tablero-default-rtdb.firebaseio.com';
 const RAIZ = process.env.TABLERO_RAIZ || 'tableros';
@@ -32,11 +35,10 @@ async function main() {
   const tablero = await pedir('') || {};
   let subs = Object.entries(tablero.push || {}).filter(([, s]) => s && s.endpoint && s.keys);
   if (!subs.length) { console.log('Ningún dispositivo activó los avisos todavía.'); return; }
-  const tz = (tablero.prefs && tablero.prefs.tz) || 'America/Argentina/Buenos_Aires';
   const enviados = tablero.avisos || {};
   const avisos = PRUEBA
-    ? [{ k: null, t: 'Prueba de avisos', b: 'Si ves esto, los avisos de Mi tablero funcionan.', tag: 'prueba' }]
-    : calcular(tablero.items, new Date(), tz, enviados);
+    ? [{ k: null, t: 'Acá estoy 👋', b: 'Si ves esto, los mensajes de Mi tablero te llegan bien. Vas a recibir dos por día.', tag: 'prueba' }]
+    : calcular(tablero, new Date(), FRASES);
 
   let ok = 0, mal = 0, bajas = 0;
   for (const aviso of avisos) {

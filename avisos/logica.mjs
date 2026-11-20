@@ -1,16 +1,16 @@
-/* Decide qué avisos tocan ahora. No hace red: recibe los datos y devuelve
-   la lista. Las horas del tablero son "de reloj" (las que escribiste), así
-   que todo se calcula en la zona horaria del dispositivo que las anotó.
+/* Arma los dos avisos del día: uno a la mañana y otro a la noche. No hace
+   red: recibe el tablero y devuelve la lista de lo que toca mandar ahora.
 
-   Qué avisa:
-   - Parcial: la noche anterior a las 20:00, y 2 horas antes si tiene hora.
-   - Reunión u otra cosa con hora: 1 hora antes.
-   - Resumen del día a las 8:00, si hay algo para decir.                    */
+   Cada aviso mezcla ánimo con lo que hay anotado: el parcial que se viene,
+   lo del día, lo que se tildó. Las frases están en js/frases.json y se
+   eligen según el día, para que no se repitan seguido. El nombre y los
+   motivos personales no están acá: viven en el tablero (prefs).
 
-const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+   Las horas del tablero son "de reloj", así que todo se calcula en la zona
+   horaria del dispositivo que las anotó.                                  */
+
 const minutos = t => { const p = String(t).split(':'); return +p[0] * 60 + +p[1]; };
 const diaNum = f => { const p = f.split('-').map(Number); return Math.round(Date.UTC(p[0], p[1] - 1, p[2]) / 864e5); };
-const abs = (f, m) => diaNum(f) * 1440 + m;
 
 /* fecha y minutos del día, en la zona horaria pedida */
 export function reloj(instante, tz) {
@@ -20,62 +20,91 @@ export function reloj(instante, tz) {
   return { fecha: `${p.year}-${p.month}-${p.day}`, min: +p.hour * 60 + +p.minute };
 }
 
-function rango(i) {
-  if (!i.hora) return null;
-  const a = minutos(i.hora);
-  let b = i.fin ? minutos(i.fin) : a + (i.tipo === 'parcial' ? 120 : 60);
-  if (b <= a) b = a + 60;
-  return [a, b];
+/* completa una frase; si no hay nombre, lo saca sin dejar comas sueltas */
+export function completar(frase, v) {
+  let s = frase;
+  if (!v.n) {
+    s = s.replace(/^\{n\}, (.)/, (m, c) => c.toUpperCase()).replace(/, \{n\}/g, '').replace(/\{n\}/g, '');
+  }
+  s = s.replace(/\{(\w+)\}/g, (m, k) => (v[k] != null ? v[k] : ''));
+  return s.replace(/\s+([.,:;!?])/g, '$1').replace(/\s{2,}/g, ' ').trim();
 }
-function sePisan(a, b) {
-  if (a.tipo === 'parcial' && b.tipo === 'parcial') return true;
-  if (a.tipo === 'tarea' || b.tipo === 'tarea') return false;
-  const x = rango(a), y = rango(b);
-  return !!(x && y && x[0] < y[1] && y[0] < x[1]);
-}
-const falta = m => m >= 60 ? `en ${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}` : `en ${m} min`;
+/* elige una frase que cambia con el día y no se repite en días seguidos */
+export const elegir = (lista, dia, sal = 0) => lista[(((dia * 7 + sal * 3) % lista.length) + lista.length) % lista.length];
 
-export function calcular(items, instante, tz, enviados = {}) {
-  const L = reloj(instante, tz), ahora = abs(L.fecha, L.min), salida = [];
-  const todos = Object.entries(items || {}).filter(([, i]) => i && typeof i === 'object').map(([id, i]) => ({ ...i, id }));
-  const vivos = todos.filter(i => i.fecha && !i.hecho);
-  const pisa = {};
-  vivos.forEach(a => vivos.forEach(b => {
-    if (a.id < b.id && a.fecha === b.fecha && sePisan(a, b)) { (pisa[a.id] = pisa[a.id] || []).push(b); (pisa[b.id] = pisa[b.id] || []).push(a); }
-  }));
+const cuantas = (n, una, varias) => n === 1 ? una : `${n} ${varias}`;
+const enLista = (its, max = 3) => {
+  const x = its.slice(0, max).map(i => (i.hora ? `${i.hora} ` : '') + i.titulo);
+  return x.join(', ') + (its.length > max ? ` y ${its.length - max} más` : '');
+};
 
-  for (const i of vivos) {
-    const dia = abs(i.fecha, 0), ini = i.hora ? dia + minutos(i.hora) : null;
-    const C = i.c ? reloj(new Date(i.c), tz) : null, creado = C ? abs(C.fecha, C.min) : -Infinity;
-    const ojo = pisa[i.id] ? ` Se pisa con ${pisa[i.id].map(x => x.titulo).join(' y ')}.` : '';
-    const toca = (tipo, desde, hasta, t, b) => {
-      const k = `${i.id}_${tipo}_${i.fecha}_${(i.hora || '').replace(':', '')}`;
-      /* si lo anotaste cuando el aviso ya tenía que haber salido, no hace falta avisarte */
-      if (ahora >= desde && ahora < hasta && creado < desde && !enviados[k]) salida.push({ k, t, b, tag: i.id });
-    };
-    if (i.tipo === 'parcial') {
-      toca('vispera', dia - 240, dia, `Mañana: ${i.titulo}`, (i.hora ? `A las ${i.hora}.` : 'Es mañana.') + ojo);
-      if (ini != null) toca('antes', ini - 120, ini, i.titulo, `Empieza ${falta(ini - ahora)}, a las ${i.hora}.${ojo}`);
-    } else if (i.tipo !== 'tarea' && ini != null) {
-      toca('antes', ini - 60, ini, i.titulo, `Empieza ${falta(ini - ahora)}, a las ${i.hora}.${ojo}`);
+export function calcular(tablero, instante, FR) {
+  const prefs = tablero.prefs || {}, tz = prefs.tz || 'America/Argentina/Buenos_Aires';
+  const enviados = tablero.avisos || {};
+  const L = reloj(instante, tz), hoy = diaNum(L.fecha), salida = [];
+  const todos = Object.entries(tablero.items || {}).filter(([, i]) => i && typeof i === 'object').map(([id, i]) => ({ ...i, id }));
+  const orden = (a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.hora || '').localeCompare(b.hora || '');
+  const vivos = todos.filter(i => i.fecha && !i.hecho).sort(orden);
+  const ultimo = i => (i.hasta && i.hasta > i.fecha ? i.hasta : i.fecha);     /* algo puede durar varios días */
+  const delDia = d => vivos.filter(i => diaNum(i.fecha) <= d && d <= diaNum(ultimo(i)));
+  const n = String(prefs.nombre || '').trim();
+  const motivos = (Array.isArray(prefs.motivos) ? prefs.motivos : []).map(x => String(x).trim()).filter(Boolean);
+  const h = i => (i.hora ? `, a las ${i.hora}` : '');
+  const toca = (clave, hora, defecto) => {
+    const desde = minutos(/^\d{1,2}:\d{2}$/.test(prefs[hora] || '') ? prefs[hora] : defecto);
+    return L.min >= desde && L.min < desde + 180 && !enviados[clave];
+  };
+
+  /* ---------- a la mañana ---------- */
+  const km = `m_${L.fecha}`;
+  if (toca(km, 'h1', '08:00')) {
+    const deHoy = delDia(hoy), parHoy = deHoy.find(i => i.tipo === 'parcial' && diaNum(i.fecha) === hoy);
+    const parCerca = vivos.find(i => i.tipo === 'parcial' && diaNum(i.fecha) > hoy && diaNum(i.fecha) <= hoy + 3);
+    const atras = vivos.filter(i => i.tipo === 'tarea' && diaNum(ultimo(i)) < hoy).length;
+    const partes = [];
+    if (parHoy) {
+      partes.push(completar(elegir(FR.manana_parcial_hoy, hoy), { n, p: parHoy.titulo, h: h(parHoy) }));
+      const resto = deHoy.filter(i => i !== parHoy);
+      if (resto.length) partes.push(completar(elegir(FR.manana_hoy, hoy), { lista: enLista(resto, 2) }));
+    } else if (parCerca) {
+      const d = diaNum(parCerca.fecha) - hoy;
+      partes.push(d === 1
+        ? completar(elegir(FR.manana_parcial_manana, hoy), { n, p: parCerca.titulo, h: h(parCerca) })
+        : completar(elegir(FR.manana_parcial_cerca, hoy), { n, p: parCerca.titulo, dias: `${d} días` }));
+      if (deHoy.length) partes.push(completar(elegir(FR.manana_hoy, hoy), { lista: enLista(deHoy, 2) }));
+    } else if (deHoy.length >= 3) {
+      partes.push(completar(elegir(FR.manana_cargado, hoy), { n, c: deHoy.length, primero: (deHoy[0].hora ? `${deHoy[0].hora} ` : '') + deHoy[0].titulo }));
+    } else if (deHoy.length) {
+      partes.push(completar(elegir(FR.manana_normal, hoy), { n, lista: enLista(deHoy) }));
+    } else {
+      partes.push(completar(elegir(FR.manana_libre, hoy), { n }));
     }
+    /* como mucho dos ideas por mensaje; lo atrasado se recuerda cada tres días, sin machacar */
+    if (partes.length < 2) {
+      if (atras && hoy % 3 === 0) partes.push(completar(elegir(FR.manana_atrasadas, hoy), { a: cuantas(atras, 'una cosa atrasada', 'cosas atrasadas') }));
+      else if (motivos.length && hoy % 2 === 0) partes.push(completar(elegir(FR.motivo, hoy), { m: elegir(motivos, hoy, 1) }));
+    }
+    salida.push({ k: km, t: n ? `Buen día, ${n} ☀️` : 'Buen día ☀️', b: partes.join(' '), tag: 'manana' });
   }
 
-  const kd = `dia_${L.fecha}`;
-  if (L.min >= 480 && L.min < 720 && !enviados[kd]) {
-    const orden = (a, b) => (a.hora || '').localeCompare(b.hora || '');
-    const deHoy = vivos.filter(i => i.fecha === L.fecha).sort(orden);
-    const atrasadas = vivos.filter(i => i.tipo === 'tarea' && i.fecha < L.fecha).length;
-    const maniana = vivos.filter(i => i.tipo === 'parcial' && diaNum(i.fecha) === diaNum(L.fecha) + 1);
-    const lineas = deHoy.slice(0, 4).map(i => (i.hora ? `${i.hora} ` : '') + i.titulo);
-    if (deHoy.length > 4) lineas.push(`y ${deHoy.length - 4} más`);
-    if (deHoy.some(i => pisa[i.id] && pisa[i.id].some(x => x.fecha === L.fecha))) lineas.push('Ojo: hoy se te juntan cosas.');
-    maniana.forEach(i => lineas.push(`Mañana: ${i.titulo}`));
-    if (atrasadas) lineas.push(atrasadas === 1 ? 'Tenés una tarea atrasada.' : `Tenés ${atrasadas} tareas atrasadas.`);
-    if (lineas.length) {
-      const d = new Date(Date.UTC(...L.fecha.split('-').map((n, k) => k === 1 ? +n - 1 : +n)));
-      salida.push({ k: kd, t: `Hoy, ${DIAS[d.getUTCDay()]} ${d.getUTCDate()}`, b: lineas.join('\n'), tag: 'dia' });
+  /* ---------- a la noche ---------- */
+  const kn = `n_${L.fecha}`;
+  if (toca(kn, 'h2', '21:00')) {
+    const deManiana = delDia(hoy + 1), parMan = deManiana.find(i => i.tipo === 'parcial' && diaNum(i.fecha) === hoy + 1);
+    const hechas = todos.filter(i => i.hecho && i.ht && reloj(new Date(i.ht), tz).fecha === L.fecha).length;
+    const partes = [];
+    if (parMan) {
+      partes.push(completar(elegir(FR.noche_parcial_manana, hoy), { n, p: parMan.titulo, h: h(parMan) }));
+    } else {
+      partes.push(hechas
+        ? completar(elegir(FR.noche_logros, hoy), { n, k: cuantas(hechas, 'una cosa', 'cosas') })
+        : completar(elegir(FR.noche_tranqui, hoy), { n }));
+      partes.push(deManiana.length
+        ? completar(elegir(FR.noche_manana, hoy), { lista: enLista(deManiana) })
+        : completar(elegir(FR.noche_manana_libre, hoy), {}));
     }
+    if (parMan && motivos.length) partes.push(completar(elegir(FR.motivo, hoy), { m: elegir(motivos, hoy, 1) }));
+    salida.push({ k: kn, t: n ? `Buenas noches, ${n} 🌙` : 'Buenas noches 🌙', b: partes.join(' '), tag: 'noche' });
   }
   return salida;
 }

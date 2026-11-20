@@ -1,0 +1,122 @@
+{
+  "_": "Frases de Mi tablero. {n} nombre, {p} parcial, {h} hora, {dias} lo que falta, {c} cantidad, {primero} lo primero del día, {lista} lo anotado, {k} lo que se tildó, {a} lo atrasado, {m} un motivo propio.",
+
+  "manana_parcial_hoy": [
+    "Hoy es el día, {n}. {p}{h}. El trabajo ya lo hiciste: ahora andá y mostralo.",
+    "{n}, hoy rendís {p}{h}. Respirá hondo: sabés más de lo que creés.",
+    "Llegó {p}{h}. Confiá en todas las veces que te sentaste a estudiar, {n}. Vas con todo.",
+    "Hoy rendís {p}{h}. Entrá con calma, {n}: lo que te propusiste siempre lo sacaste adelante."
+  ],
+  "manana_parcial_manana": [
+    "Mañana rendís {p}{h}. Hoy repasá lo justo y cuidate, {n}: vas a llegar bien.",
+    "{n}, mañana es {p}{h}. Un repaso tranquilo hoy y a descansar temprano. Vas a poder.",
+    "Falta un día para {p}. Lo importante ya lo hiciste, {n}. Hoy solo afiná detalles."
+  ],
+  "manana_parcial_cerca": [
+    "En {dias} rendís {p}. No hace falta saberlo todo hoy, {n}: un tema bien cerrado y ya ganaste el día.",
+    "{n}, {p} es en {dias}. Estás a tiempo, y cada rato que le dediques hoy te va a dar calma ese día.",
+    "{p} en {dias}. Siempre pudiste con lo que te propusiste, {n}. Esta no va a ser la excepción.",
+    "Faltan pocos días para {p}: {dias}. Hoy sumá un poco más, {n}. De a poco se llega lejos."
+  ],
+  "manana_cargado": [
+    "Hoy viene movido, {n}: {c} cosas. De a una se puede con todas. Arrancá por {primero}.",
+    "{c} cosas para hoy, {n}. Parece mucho, pero ya pasaste días así y salieron bien. Primero: {primero}.",
+    "Día intenso, {n}: {c} cosas. No las mires todas juntas, mirá la que sigue: {primero}."
+  ],
+  "manana_normal": [
+    "Buen día, {n}. Hoy tenés: {lista}. Un paso a la vez y el día es tuyo.",
+    "Arriba, {n}. Para hoy: {lista}. Lo que te proponés, lo hacés.",
+    "Hoy: {lista}. Es un día a tu medida, {n}. Hacelo valer.",
+    "Buen día, {n}. En la lista de hoy: {lista}. Vas a poder con esto y con más."
+  ],
+  "manana_libre": [
+    "Buen día, {n}. Hoy no tenés nada anotado: adelantá algo chiquito o descansá sin culpa. Las dos cosas suman.",
+    "Día despejado, {n}. Usalo a tu favor: lo que hagas hoy, mañana te lo vas a agradecer.",
+    "Hoy la agenda está libre, {n}. Buen momento para acordarte de todo lo que ya lograste.",
+    "Sin nada anotado para hoy, {n}. Un día liviano también es parte del camino. Disfrutalo."
+  ],
+  "manana_atrasadas": [
+    "Tenés {a}. Elegí la más fácil y sacátela de encima temprano: se siente bárbaro.",
+    "Hay {a} esperándote. Sin drama: empezá por la más corta.",
+    "Quedó {a}. Hoy es un buen día para ponerte al día, de a una."
+  ],
+  "manana_hoy": [
+    "Hoy además: {lista}.",
+    "Y para hoy: {lista}."
+  ],
+  "motivo": [
+    "Acordate por qué lo hacés: {m}.",
+    "Todo esto tiene un porqué: {m}.",
+    "Lo de hoy te acerca a esto: {m}."
+  ],
+
+  "noche_parcial_manana": [
+    "Mañana rendís {p}{h}. Lo que estudiaste ya está adentro, {n}. Dormir bien también es prepararse.",
+    "{n}, mañana es {p}{h}. Cerrá los apuntes temprano y descansá: vas a llegar bien.",
+    "Mañana {p}{h}. Hiciste lo que había que hacer, {n}. Ahora te toca descansar y confiar."
+  ],
+  "noche_logros": [
+    "Hoy tildaste {k}, {n}. Eso es avanzar de verdad. Ahora descansá, te lo ganaste.",
+    "Hoy sacaste {k} de la lista. Gran día, {n}. Mañana seguís desde más adelante.",
+    "Cerrás el día habiendo resuelto {k}. Así se construye, {n}: de a poco y sin parar.",
+    "{n}, hoy resolviste {k}. Mirá para atrás un segundo: avanzaste. Buenas noches."
+  ],
+  "noche_tranqui": [
+    "Hoy no tildaste nada, y está bien: no todos los días son para correr. Mañana arrancás con energía, {n}.",
+    "Día tranquilo, {n}. Descansar también es parte del plan. Mañana seguís.",
+    "Hoy fue un día de pausa, {n}. No perdiste nada: juntaste fuerzas. Buenas noches.",
+    "Cerrá el día en paz, {n}. Lo que te propongas mañana, lo vas a hacer."
+  ],
+  "noche_manana": [
+    "Para mañana: {lista}.",
+    "Mañana te espera: {lista}."
+  ],
+  "noche_manana_libre": [
+    "Mañana tenés el día libre.",
+    "Mañana no hay nada anotado: aprovechalo."
+  ],
+
+  "app_siempre": [
+    "Siempre pudiste con lo que te propusiste. Esto también.",
+    "No tenés que hacer todo hoy. Solo lo que sigue.",
+    "Lo difícil de hoy es lo que mañana vas a contar con orgullo.",
+    "Ya llegaste hasta acá. Eso no fue suerte.",
+    "Un tema a la vez. Así se aprueba todo.",
+    "Estás más cerca que ayer.",
+    "La calma también se entrena. Respirá y seguí.",
+    "Lo que hoy te estresa es porque te importa. Y lo vas a sacar.",
+    "Paso corto, paso firme.",
+    "Confiá en quien se sentó a estudiar todas esas veces: sos vos.",
+    "Cada cosa que anotás acá es algo que vas a lograr.",
+    "Vos podés con esto. Ya lo demostraste.",
+    "No hace falta que sea perfecto. Hace falta que lo hagas.",
+    "Lo que te propongas, lo vas a hacer. Como siempre.",
+    "Hoy no se trata de llegar: se trata de avanzar un poco.",
+    "Detrás de cada parcial hay una versión tuya más fuerte.",
+    "Anotarlo ya es empezar. Lo demás viene solo.",
+    "Mirá todo lo que ya tachaste en tu vida. Esto es uno más.",
+    "El cansancio pasa. Lo que construís, queda.",
+    "Tranqui: tenés tiempo, tenés con qué y tenés ganas."
+  ],
+  "app_hero_parcial": [
+    "Vas a llegar bien.",
+    "Tenés tiempo y tenés con qué.",
+    "Un tema por día y llegás.",
+    "Ya rendiste cosas más difíciles.",
+    "Esto también lo vas a aprobar."
+  ],
+  "app_tildar": [
+    "¡Una menos! Así se hace.",
+    "¡Listo! Seguí así, {n}.",
+    "Tildada. Qué bien se siente, ¿no?",
+    "¡Bien ahí, {n}! De a una se llega.",
+    "Hecho. Un paso más cerca.",
+    "¡Eso! Otra cosa que ya no te pesa.",
+    "Listo. Te lo propusiste y lo hiciste."
+  ],
+  "app_despejado": [
+    "Todo al día, {n}. Disfrutalo: te lo ganaste.",
+    "No hay nada pendiente. Mirá qué bien se ve eso.",
+    "Lista vacía, cabeza liviana. Bien ahí, {n}."
+  ]
+}

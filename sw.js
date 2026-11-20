@@ -1,8 +1,9 @@
 /* Mi tablero: abre sin conexión. La red va primero para que siempre
    llegue la última versión; si no hay red, se usa lo guardado. */
-const V = 'mi-tablero-v5';
+const V = 'mi-tablero-v6';
 const BASE = ['./', 'index.html', 'js/red-config.js', 'manifest.webmanifest', 'manifest-ios.webmanifest',
-  'icons/app-192.png', 'icons/app-512.png', 'icons/app-180.png', 'icons/app.svg'];
+  'js/frases.json',
+  'icons/ci-192.png', 'icons/ci-512.png', 'icons/ci-180.png', 'icons/isotipo.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(BASE)).then(() => self.skipWaiting()));
@@ -44,7 +45,7 @@ self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (x) { d = { b: e.data ? e.data.text() : '' }; }
   e.waitUntil(self.registration.showNotification(d.t || 'Mi tablero', {
-    body: d.b || '', icon: 'icons/app-192.png', badge: 'icons/app-192.png', tag: d.tag || undefined, data: { url: d.url || './' }
+    body: d.b || '', icon: 'icons/ci-192.png', badge: 'icons/ci-192.png', tag: d.tag || undefined, data: { url: d.url || './' }
   }));
 });
 self.addEventListener('notificationclick', e => {

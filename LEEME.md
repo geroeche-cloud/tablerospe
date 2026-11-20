@@ -14,6 +14,9 @@ Student Chapter (la versión del grupo quedó en `main`, commit `9adbcaa`).
 - **Choques**: avisa cuando dos cosas se pisan de horario, cuando hay dos
   parciales el mismo día y cuando dos parciales quedan en días seguidos.
   Avisa también antes de guardar.
+- **Varios días**: algo puede durar más de un día (`Congreso del 25 al 27
+  de noviembre`); en el calendario se ve como una franja.
+- **Frases** que cambian en el saludo y festejo al tildar una tarea.
 - **Anotar** con el botón +: se escribe en una línea y completa solo el
   tipo, el día y la hora. `Parcial de Física 2 el viernes 18hs`,
   `Reunión SPE mañana a las 19`, `Entregar TP de Química el lunes`.
@@ -21,11 +24,12 @@ Student Chapter (la versión del grupo quedó en `main`, commit `9adbcaa`).
 
 ## Avisos al teléfono
 
-Se activan en Ajustes → Avisos, en cada dispositivo. Avisa:
-
-- a las 8:00, un resumen con lo del día;
-- la noche anterior (20:00) y dos horas antes de cada parcial;
-- una hora antes de cada reunión u otra cosa con hora.
+Se activan en Ajustes → Avisos, en cada dispositivo. Son dos mensajes por
+día, a la mañana (8:00) y a la noche (21:00); el horario se cambia en
+Ajustes. Cada uno mezcla ánimo con lo que hay anotado: el parcial que se
+viene, lo del día, lo que se tildó. Las frases están en `js/frases.json`.
+El nombre y los motivos personales se cargan en Ajustes → Sobre vos y se
+guardan en el tablero, no en el repo.
 
 Los manda GitHub Actions (`.github/workflows/avisos.yml`), que corre
 `avisos/enviar.mjs` cada 10 minutos; pueden llegar con unos minutos de
@@ -35,10 +39,18 @@ variable `VAPID_PUBLICA`. Si se cambia el link personal hay que actualizar
 `TABLERO_CLAVE`. Para mandar un aviso de prueba: pestaña Actions → Avisos →
 Run workflow. En iPhone solo funcionan con la app instalada.
 
+## Identidad
+
+La app usa el isotipo oficial de Cursemos Ingeniería (`icons/isotipo.png`,
+sin modificar), su azul y sus tipografías (Space Grotesk e Inter). El rojo
+del ícono y del saludo es propio de esta app personal: no forma parte de
+la paleta de la marca.
+
 ## Archivos
 
 - `index.html`: toda la aplicación.
 - `js/red-config.js`: conexión a Firebase y las reglas que hay que publicar.
+- `js/frases.json`: las frases de la app y de los avisos.
 - `manifest.webmanifest`, `manifest-ios.webmanifest`, `sw.js`, `icons/`: lo
   que la hace instalable y que abra sin conexión.
 - `avisos/`, `.github/workflows/avisos.yml`: el emisor de los avisos.
