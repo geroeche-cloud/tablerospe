@@ -41,10 +41,12 @@ Run workflow. En iPhone solo funcionan con la app instalada.
 
 ## Identidad
 
-La app usa el isotipo oficial de Cursemos Ingeniería (`icons/isotipo.png`,
-sin modificar), su azul y sus tipografías (Space Grotesk e Inter). El rojo
-del ícono y del saludo es propio de esta app personal: no forma parte de
-la paleta de la marca.
+Oscura, con rojo iluminado y plata: el fondo y las superficies siguen los
+tonos oscuros de Cursemos Ingeniería, los títulos y la cuenta regresiva
+van en titanio, y el isotipo oficial (`icons/isotipo.png`, sin modificar)
+aparece en el saludo y en el ícono. Tipografías de la marca: Space Grotesk
+e Inter. El rojo es propio de esta app personal: no forma parte de la
+paleta de Cursemos, que es azul y metal.
 
 ## Archivos
 

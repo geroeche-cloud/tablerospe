@@ -1,6 +1,6 @@
 /* Mi tablero: abre sin conexión. La red va primero para que siempre
    llegue la última versión; si no hay red, se usa lo guardado. */
-const V = 'mi-tablero-v6';
+const V = 'mi-tablero-v7';
 const BASE = ['./', 'index.html', 'js/red-config.js', 'manifest.webmanifest', 'manifest-ios.webmanifest',
   'js/frases.json',
   'icons/ci-192.png', 'icons/ci-512.png', 'icons/ci-180.png', 'icons/isotipo.png'];
